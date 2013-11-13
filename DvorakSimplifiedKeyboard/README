@@ -1,0 +1,17 @@
+~How to Compile~
+1. Run Makefile through terminal.
+2. Execute the executable with name DSK.
+
+~Expected Inputs~
+1. Press keys using mouse left key.
+2. Use right button of mouse for zooming a key.
+3. Use +/- of keyboard for zooming the whole keyboard at once.
+
+~Notable Defects~
+1. The output on output bar may overflow from its boundaries if too many(>80) letters are entered in on line, or more than 4 lines of text is entered.
+
+
+~References~
+http://www.lighthouse3d.com/opengl/picking/
+http://www.lighthouse3d.com/opengl/glut/
+http://www.videotutorialsrock.com/
