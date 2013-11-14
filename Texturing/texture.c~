@@ -1,8 +1,3 @@
-/* Some part of this code is taken from examples and tutorials from various websites
-   hence this code is not final and optimal.
-*/
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

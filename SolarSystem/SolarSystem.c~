@@ -1,8 +1,3 @@
-/* Some part of this code is taken from examples and tutorials from various websites
-   hence this code is not final and optimal.
-*/
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -20,12 +15,12 @@
 GLint vp[4];
 float zRotation = 0.0;
 float zoom = 1;
-GLint objectCount;
-GLint numObjects;
 
-float yaw = 0;
-float pitch = 0;
-float cameraDistance = 1;
+float yaw = 0.0f;
+float pitch = 0.0f;
+float pitchM = 0.0f;
+float yawM = 0.0f;
+float cameraDistance = 0;
 
 int LeftButtonDown = 0;
 int ShiftLeftButtonDown = 0;
@@ -42,7 +37,7 @@ double maxZ = -100.0, maxX = -100.0, maxY = -100.0, minX = 0.0, minY = 0.0, minZ
 GLenum linePoly = GL_FALSE;
 GLenum pointDraw = GL_FALSE;
 GLenum backColor = GL_FALSE;
-
+int flyThrough = 1;
 GLint windW = 800, windH = 600;
 
 enum {
@@ -57,8 +52,7 @@ enum {
 
 GLfloat red_light[] = { 1.0, 0.0, 0.0, 1.0 }, green_light[] = { 0.0, 1.0, 0.0, 1.0 }, white_light[] = { 1.0, 1.0, 1.0, 1.0 };
 
-GLfloat left_light_position[] = { -20.0, 0.0, -10.0, 1.0 }, right_light_position[] = { 20.0, 0.0, -10.0, 1.0 };
-//	front_light_position[] ={0.0, 0.0, 1.0, 1.0};
+GLfloat left_light_position[] = { -20.0, 0.0, 10.0, 1.0 }, right_light_position[] = { 20.0, 0.0, 10.0, 1.0 }, front_light_position[] = { 0.0, 0.0, 0.0, 1.0 };
 
 GLfloat brass_ambient[] = { 0.33, 0.22, 0.03, 1.0 }, brass_diffuse[] = { 0.78, 0.57, 0.11, 1.0 }, brass_specular[] = { 0.99, 0.91, 0.81, 1.0 }, brass_shininess = 100.0;
 
@@ -66,14 +60,22 @@ GLfloat red_plastic_ambient[] = { 0.0, 0.0, 0.0 }, red_plastic_diffuse[] = { 0.5
 
 GLfloat emerald_ambient[] = { 0.0215, 0.1745, 0.0215 }, emerald_diffuse[] = { 0.07568, 0.61424, 0.07568 }, emerald_specular[] = { 0.633, 0.727811, 0.633 }, emerald_shininess = 76.8;
 
-GLfloat white_ambient[] = { 0.9, 0.9, 0.9, 1.0 }, white_diffuse[] = { 0.4, 0.4, 0.4, 1.0 }, white_specular[] = { 0.5, 0.5, 0.5, 1.0 }, white_shininess = 60.0;
+GLfloat white_ambient[] = { 0.9, 0.9, 0.9, 1.0 }, white_diffuse[] = { 0.9, 0.9, 0.9, 1.0 }, white_specular[] = { 0.9, 0.9, 0.9, 1.0 }, white_shininess = 60.0;
 
 int shade_model = GL_SMOOTH;
 char *left_light, *right_light;
 char *ico_material, *teapot_material, *torus_material;
-unsigned char* image;
-unsigned char* ground;
-unsigned char* environment;
+unsigned char* sunImg;
+unsigned char* earthImg;
+unsigned char* moonImg;
+unsigned char* jupitorImg;
+unsigned char* marsImg;
+unsigned char* neptuneImg;
+unsigned char* uranusImg;
+unsigned char* venusImg;
+unsigned char* mercuryImg;
+unsigned char* saturnImg;
+unsigned char* backImg;
 
 typedef struct vertex {
 	GLfloat coord[3];
@@ -96,22 +98,22 @@ Normals* normals;
 Vertex* origin;
 
 int noOfFaces = 0;
-float imageSize;
+long imageSize;
 int imgWidth, imgHeight;
-GLuint textureIDSkin, textureIDGround, textureIDEnvironment;
+GLuint textureIDEarth, textureIDSun, textureIDMoon, textureIDMars, textureIDJupiter, textureIDNeptune, textureIDVenus, textureIDUranus, textureIDMercury, textureIDBack, textureIDSaturn;
 
 #define PI 3.141592654
 #define TWOPI 6.283185308
 
 void SphereMap(float* vertices, float *t, float *s) {
 
-	float radius = 0.1f;
+	float radius = 1.0f;
 
 	float x = vertices[0] * radius;
 	float y = vertices[1] * radius;
 	float z = vertices[2] * radius;
 
-	*t = (atan2(z, x) / (2 * PI)) + 0.5;
+	*t = (atan2(z, x) / (TWOPI)) + 0.5;
 
 	*s = 0.5 + (asin(y) / PI);
 
@@ -261,9 +263,9 @@ static void loadTriFile(char *fileName) {
 
 	printf("Origin %f %f %f\n", origin[0].coord[0], origin[0].coord[1], origin[0].coord[2]);
 
-	cameraDistance = maxZ - (origin[0].coord[2]);
+	//cameraDistance = maxZ - (origin[0].coord[2]);
 
-	cameraDistance = cameraDistance * 5;
+//	cameraDistance = cameraDistance * 5;
 	moveX = -1 * origin[0].coord[0];
 	moveY = -1 * origin[0].coord[1];
 
@@ -277,7 +279,7 @@ static void loadTriFile(char *fileName) {
 	fseek(coordinateReader, coordinateStartPoint, SEEK_SET);
 	int ff;
 	for (i = 0; i < noOfFaces; i++) {
-		fscanf(vertexReader, "%d %d %d\n", &polygons[i].Vertices[0], &polygons[i].Vertices[1], &polygons[i].Vertices[2]);
+		fscanf(vertexReader, "%d %d %d %d\n", &ff, &polygons[i].Vertices[0], &polygons[i].Vertices[1], &polygons[i].Vertices[2]);
 		calculatePerVertexNormal(polygons[i].Vertices[0], polygons[i].Vertices[1], polygons[i].Vertices[2]);
 		//	printf("%d %d %d\n",triangles[i].Vertices[0],triangles[i].Vertices[1],triangles[i].Vertices[2]);
 	}
@@ -294,72 +296,148 @@ static void loadTriFile(char *fileName) {
 }
 
 static void Init(void) {
-	//numObjects = 10;
 
-	loadTriFile("cow.tri");
+	loadTriFile("sphere.tri");
 
-	glShadeModel(GL_SMOOTH);
+	earthImg = SOIL_load_image("EarthImg.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
 
-	image = SOIL_load_image("img1.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
-
-	glGenTextures(1, &textureIDSkin);
+	glGenTextures(1, &textureIDEarth);
 
 	// "Bind" the newly created texture : all future texture functions will modify this texture
-	glBindTexture(GL_TEXTURE_2D, textureIDSkin);
-
+	glBindTexture(GL_TEXTURE_2D, textureIDEarth);
 	// Give the image to OpenGL
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-	//gluBuild2DMipmaps( GL_TEXTURE_2D, GL_RGB, imgWidth, imgHeight, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, earthImg);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
 	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	SOIL_free_image_data(earthImg);
 
-	ground = SOIL_load_image("G2.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
-	glGenTextures(2, &textureIDGround);
-
+	sunImg = SOIL_load_image("sun.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
+	glGenTextures(1, &textureIDSun);
 	// "Bind" the newly created texture : all future texture functions will modify this texture
-	glBindTexture(GL_TEXTURE_2D, textureIDGround);
-
+	glBindTexture(GL_TEXTURE_2D, textureIDSun);
 	// Give the image to OpenGL
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, ground);
-	//gluBuild2DMipmaps( GL_TEXTURE_2D, GL_RGB, imgWidth, imgHeight, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, sunImg);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
 	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	SOIL_free_image_data(sunImg);
 
-	environment = SOIL_load_image("E1.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
-	glGenTextures(3, &textureIDEnvironment);
-
+	moonImg = SOIL_load_image("MoonImg.bmp", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
+	glGenTextures(1, &textureIDMoon);
 	// "Bind" the newly created texture : all future texture functions will modify this texture
-	glBindTexture(GL_TEXTURE_2D, textureIDEnvironment);
-
+	glBindTexture(GL_TEXTURE_2D, textureIDMoon);
 	// Give the image to OpenGL
-	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, environment);
-	//gluBuild2DMipmaps( GL_TEXTURE_2D, GL_RGB, imgWidth, imgHeight, GL_RGB, GL_UNSIGNED_BYTE, environment);
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, moonImg);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
 	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	SOIL_free_image_data(moonImg);
 
-	glTexGeni( GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP); // GL_NORMAL_MAP  GL_EYE_LINEAR GL_OBJECT_LINEAR GL_REFLECTION_MAP
-	glTexGeni( GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+	marsImg = SOIL_load_image("MarsImg.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
+	glGenTextures(1, &textureIDMars);
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, textureIDMars);
+	// Give the image to OpenGL
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, marsImg);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	SOIL_free_image_data(marsImg);
+
+	jupitorImg = SOIL_load_image("Jupiter.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
+	glGenTextures(1, &textureIDJupiter);
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, textureIDJupiter);
+	// Give the image to OpenGL
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, jupitorImg);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	SOIL_free_image_data(jupitorImg);
 
 
+	saturnImg = SOIL_load_image("SaturnImg.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
+		glGenTextures(1, &textureIDSaturn);
+		// "Bind" the newly created texture : all future texture functions will modify this texture
+		glBindTexture(GL_TEXTURE_2D, textureIDSaturn);
+		// Give the image to OpenGL
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, saturnImg);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
+		glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		SOIL_free_image_data(saturnImg);
 
-	static GLfloat sgenparams[] = {0, 10, 0, 0 };
-	static GLfloat tgenparams[] = { 0, 0, 10, 0 };
 
-	glTexGenfv( GL_S, GL_OBJECT_PLANE, sgenparams); //GL_OBJECT_PLANE GL_EYE_PLANE
-	glTexGenfv( GL_T, GL_OBJECT_PLANE, tgenparams);
+	uranusImg = SOIL_load_image("UranusImg.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
+	glGenTextures(1, &textureIDUranus);
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, textureIDUranus);
+	// Give the image to OpenGL
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, uranusImg);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	SOIL_free_image_data(uranusImg);
 
-	//   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND );
+	venusImg = SOIL_load_image("VenusImg.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
+	glGenTextures(1, &textureIDVenus);
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, textureIDVenus);
+	// Give the image to OpenGL
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, venusImg);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	SOIL_free_image_data(venusImg);
+
+	mercuryImg = SOIL_load_image("MercuryImg.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
+	glGenTextures(1, &textureIDMercury);
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, textureIDMercury);
+	// Give the image to OpenGL
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, mercuryImg);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	SOIL_free_image_data(mercuryImg);
+
+	neptuneImg = SOIL_load_image("NeptuneImg.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
+	glGenTextures(1, &textureIDNeptune);
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, textureIDNeptune);
+	// Give the image to OpenGL
+	glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, neptuneImg);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	SOIL_free_image_data(neptuneImg);
+
+	backImg = SOIL_load_image("Space6.jpg", &imgWidth, &imgHeight, 0, SOIL_LOAD_AUTO);
+	glGenTextures(1, &textureIDBack);
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	glBindTexture(GL_TEXTURE_2D, textureIDBack);
+	// Give the image to OpenGL
+	//glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, backImg);
+	gluBuild2DMipmaps( GL_TEXTURE_2D, GL_RGB, imgWidth, imgHeight, GL_RGB, GL_UNSIGNED_BYTE, backImg);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_SPHERE_MAP); //GL_SPHERE_MAP GL_CLAMP GL_REPEAT
+	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_SPHERE_MAP);
+	SOIL_free_image_data(backImg);
+
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
-	SOIL_free_image_data(image);
-	SOIL_free_image_data(ground);
-	SOIL_free_image_data(environment);
 	imageSize = imgWidth * imgHeight;
 
 }
@@ -372,191 +450,84 @@ static void Reshape(int width, int height) {
 	// Set viewing frustum
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(45, (float) width / height, 0.001f, 80);
+	gluPerspective(45, (float) width / height, 0.001f, 180);
 
 	// Modelview matrix reset
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
 
+static void suround() {
 
-static void surround(){
 
-	//glEnable( GL_TEXTURE_GEN_S);
-	//glEnable( GL_TEXTURE_GEN_T);
+//	glBindTexture(GL_TEXTURE_2D, textureIDBack);
+//
+//	glBegin(GL_QUADS);
+//	glNormal3d(0, 0, 100);
+//	glTexCoord2f(0, 1);
+//	glVertex3d(-windW,-windH, -1000);
+//
+//	glTexCoord2f(1, 1);
+//	glVertex3d(windW,-windH, -1000);
+//
+//	glTexCoord2f(1, 0);
+//	glVertex3d(windW,windH, -1000);
+//
+//	glTexCoord2f(0, 0);
+//	glVertex3d(-windW,windH, -1000);
+//	glEnd();
 
-	glBindTexture(GL_TEXTURE_2D, textureIDGround);
-		glBegin(GL_POLYGON);
-		glNormal3d(0, 10, 0);
-		glTexCoord2f(0, 1);
-		glVertex3d(minX - 2, minY + 0.4, maxZ + 2);
-
-		glTexCoord2f(1, 1);
-		glVertex3d(maxX + 2, minY + 0.4, maxZ + 2);
-
-		glTexCoord2f(1, 0);
-		glVertex3d(maxX + 2, minY + 0.4, minZ - 2);
-
-		glTexCoord2f(0, 0);
-		glVertex3d(minX - 2, minY + 0.4, minZ - 2);
-		glEnd();
-
-		glBindTexture(GL_TEXTURE_2D, textureIDEnvironment);
-		glBegin(GL_QUADS);
-		glNormal3d(1, 0, 0);
-		glTexCoord2f(0, 1);
-		glVertex3d(minX - 2, minY + 0.4, maxZ + 2);
-
-		glTexCoord2f(0, 0);
-		glVertex3d(minX - 2, maxY + 2.0, maxZ + 2);
-
-		glNormal3d(0, 0, 1);
-		glTexCoord2f(0.33, 0);
-		glVertex3d(minX - 2, maxY + 2.0, minZ - 2);
-
-		glNormal3d(0, 0, 1);
-		glTexCoord2f(0.33, 1);
-		glVertex3d(minX - 2, minY + 0.4, minZ - 2);
-
-		glEnd();
-		glBegin(GL_QUADS);
-
-		glNormal3d(0, 0, 1);
-		glTexCoord2f(0.33, 0);
-		glVertex3d(minX - 2, maxY + 2.0, minZ - 2);
-
-		glNormal3d(-1, 0, 1);
-		glTexCoord2f(0.66, 0);
-		glVertex3d(maxX + 2, maxY + 2.0, minZ - 2);
-
-		glNormal3d(0, 0, 1);
-		glTexCoord2f(0.66, 1);
-		glVertex3d(maxX + 2, minY + 0.4, minZ - 2);
-
-		glNormal3d(0, 0, 1);
-		glTexCoord2f(0.33, 1);
-		glVertex3d(minX - 2, minY + 0.4, minZ - 2);
-
-		glEnd();
-		glBegin(GL_QUADS);
-
-		glNormal3d(-1, 0, 1);
-		glTexCoord2f(0.66, 0);
-		glVertex3d(maxX + 2, maxY + 2.0, minZ - 2);
-		glNormal3d(-1, 0, 0);
-		glTexCoord2f(1, 0);
-		glVertex3d(maxX + 2, maxY + 2.0, maxZ + 2);
-
-		glTexCoord2f(1, 1);
-		glVertex3d(maxX + 2, minY + 0.4, maxZ + 2);
-
-		//glNormal3d(-1, 0, 1);
-		glTexCoord2f(0.66, 1);
-		glVertex3d(maxX + 2, minY + 0.4, minZ - 2);
-
-		glEnd();
 
 
 }
 
+static void RenderObject(int textureId, int displacement, int normalSign) {
 
-
-static void Render(GLenum mode) {
 	GLint i;
 
 	int v1, v2, v3;
 
-	GLfloat Xinc = minX; //vertices[polygons[0].Vertices[0]].coord[0];
-	GLfloat Yinc = minY; //vertices[polygons[0].Vertices[0]].coord[1];
-	GLfloat Zinc = minZ; //vertices[polygons[0].Vertices[0]].coord[2];
-
-	GLfloat Ydiff = 0.0;
-	GLfloat Zdiff = 0.0;
-
 	GLfloat texX;
 	GLfloat texY;
 
-	GLfloat scale = 0.1f;
+	glBindTexture(GL_TEXTURE_2D, textureId);
 
-	surround();
-
-	glDisable( GL_TEXTURE_GEN_S);
-	glDisable( GL_TEXTURE_GEN_T);
-
-
-	glBindTexture(GL_TEXTURE_2D, textureIDSkin);
 	for (i = 0; i < noOfFaces; i++) {
-		if (mode == GL_SELECT) {
-			glLoadName(i);
-		}
+
 		v1 = polygons[i].Vertices[0];
 		v2 = polygons[i].Vertices[1];
 		v3 = polygons[i].Vertices[2];
 
 		glBegin(GL_TRIANGLES);
 
-		glNormal3fv(normals[v1].normal);
+		//	printf("\n%ui",environment[(imgX++)%imageSize]);
+
+		glNormal3f(normals[v1].normal[0]*normalSign,normals[v1].normal[1]*normalSign,normals[v1].normal[2]*normalSign);
 		//	SphereMap( normals[v1].normal, &texX, &texY);
-		//SphereMap(vertices[v1].coord, &texX, &texY);
-		//	glTexCoord2f(texX*0.1,texY*0.1);
-		//glTexCoord2f(texX, texY);
-		Ydiff = (vertices[v1].coord[1] - Yinc) * scale;
-//			Zdiff = (vertices[v1].coord[2] - Zinc)*scale;
-//			if(normals[v1].normal[2] == 0.0 ){
-//			Ydiff -= Zdiff;
-//			//printf("%f,",normals[v1].normal[2]);
-//			}
-		//printf("%f ",normals[v1].normal[2]);
-		glTexCoord2f((vertices[v1].coord[0] - Xinc) * scale, Ydiff);
-		//glTexCoord2f(normals[v1].normal[0]*scale,normals[v1].normal[1]*scale);
+		SphereMap(vertices[v1].coord, &texX, &texY);
+		glTexCoord2f(texX, texY);
+
 		glVertex3fv(vertices[v1].coord);
 
-		glNormal3fv(normals[v2].normal);
+		glNormal3f(normals[v2].normal[0]*normalSign,normals[v2].normal[1]*normalSign,normals[v2].normal[2]*normalSign);
 		//  SphereMap( normals[v2].normal,  &texX, &texY);
-		//SphereMap(vertices[v2].coord, &texX, &texY);
-		//	glTexCoord2f(texX*0.1,texY*0.1);
-		//glTexCoord2f(texX, texY);
-		Ydiff = (vertices[v2].coord[1] - Yinc) * scale;
-//			Zdiff = (vertices[v2].coord[2] - Zinc)*scale;
-//			if(normals[v2].normal[2] == 0.0 ){
-//				Ydiff -= Zdiff;
-//		//	printf("%f;",normals[v2].normal[2]);
-//			}
-		//	printf("%f ",normals[v2].normal[2]);
-		glTexCoord2f((vertices[v2].coord[0] - Xinc) * scale, Ydiff);
-		//glTexCoord2f(normals[v2].normal[0]*scale,normals[v2].normal[1]*scale);
+		SphereMap(vertices[v2].coord, &texX, &texY);
+		glTexCoord2f(texX, texY);
 		glVertex3fv(vertices[v2].coord);
 
-		glNormal3fv(normals[v3].normal);
+		glNormal3f(normals[v3].normal[0]*normalSign,normals[v3].normal[1]*normalSign,normals[v3].normal[2]*normalSign);
 		// SphereMap( normals[v3].normal,  &texX, &texY);
-		//SphereMap(vertices[v3].coord, &texX, &texY);
-		//	glTexCoord2f(texX*0.1,texY*0.1);
-		//glTexCoord2f(texX, texY);
-		Ydiff = (vertices[v3].coord[1] - Yinc) * scale;
-//			Zdiff = (vertices[v3].coord[2] - Zinc)*scale;
-//			if(normals[v3].normal[2] == 0.0 ){
-//				Ydiff -= Zdiff;
-//			//printf("%f\n",normals[v3].normal[2]);
-//			}
-		//	printf(": %f %f %f | %f %f %f\n",vertices[v3].coord[0],vertices[v3].coord[1],vertices[v3].coord[2],normals[v3].normal[0],normals[v3].normal[1],normals[v3].normal[2]);
-		glTexCoord2f((vertices[v3].coord[0] - Xinc) * scale, Ydiff);
-		//glTexCoord2f(normals[v3].normal[0]*scale,normals[v3].normal[1]*scale);
+		SphereMap(vertices[v3].coord, &texX, &texY);
+
+		glTexCoord2f(texX, texY);
+
 		glVertex3fv(vertices[v3].coord);
 
 		glEnd();
 
-		//if(i%5==0)
-		//	glutSwapBuffers();
 	}
 
-	//glutSwapBuffers();
-
-	//free(image);
-
 }
-
-
-
 
 
 static void Draw(void) {
@@ -569,19 +540,126 @@ static void Draw(void) {
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	gluLookAt(0, 0, cameraDistance, 0, 0, 0, 0, 1, 0);
-
-	//surround();
+	if(flyThrough==1)
+	gluLookAt(cos(cameraDistance)*35,sin(cameraDistance)*10, sin(cameraDistance=cameraDistance+0.01)*35, 0, 0, 0, 0, 1, 0);
+	else if(flyThrough==0)
+	gluLookAt(cos(cameraDistance)*35,sin(cameraDistance)*10, sin(cameraDistance)*35, 0, 0, 0, 0, 1, 0);
+	else
+		gluLookAt(0,0, cameraDistance, 0, 0, 0, 0, 1, 0);
 
 	glTranslated(moveX, moveY, moveZ);
 
-	glRotatef(yaw, 1, 0, 0);
-	glRotatef(pitch, 0, 1, 0);
+
+	glRotatef(yawM, 1, 0, 0);
+	glRotatef(pitchM, 0, 1, 0);
+
+	glPushMatrix();
+		glScalef(45, 45, 45);
+		RenderObject(textureIDBack,0,-1);
+		glPopMatrix();
+
 
 	glScalef(zoom, zoom, zoom);
 	glCallList(TEAPOT_MATERIAL);
 
-	Render(GL_RENDER);
+
+
+	//Render(GL_RENDER);
+	glPushMatrix();
+	glScalef(2, 2, 2);
+	glRotatef(pitch, 0, 1, 0);
+	RenderObject(textureIDSun, 0, 1);
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(pitch / 0.241, 0, 1, 0);
+	glPushMatrix();
+	glTranslated(moveX + 5, moveY, moveZ);
+	glScalef(0.383, 0.383, 0.383);
+	glRotatef(pitch/58.8, 0, 1, 0);
+	RenderObject(textureIDMercury, 10, 1);
+	glPopMatrix();
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(pitch / 0.615, 0, 1, 0);
+	glPushMatrix();
+	glTranslated(moveX + 7, moveY, moveZ);
+	glScalef(0.949, 0.949, 0.949);
+	glRotatef(pitch/-244, 0, 1, 0);
+	RenderObject(textureIDVenus, 10, 1);
+	glPopMatrix();
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(pitch, 0, 1, 0);
+	glTranslated(moveX + 11, moveY, moveZ);
+	//glScalef(0.1, 0.1, 0.1);
+	glRotatef(pitch, 0, 1, 0.3);
+	//glRotatef(yaw, 1, 0, 0);
+	RenderObject(textureIDEarth, 10, 1);
+
+	glPushMatrix();
+	glRotatef(pitch/0.0748, 0, 1, 0);
+	glTranslated(moveX + 2, moveY, moveZ);
+	glScalef(0.2724, 0.2724, 0.2724);
+	glRotatef(pitch/27.4, 0, 1, 0);
+	RenderObject(textureIDMoon, 10, 1);
+	glPopMatrix();
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(pitch / 1.88, 0, 1, 0);
+	glPushMatrix();
+	glTranslated(moveX + 14, moveY, moveZ);
+	glScalef(0.532, 0.532, 0.532);
+	glRotatef(pitch/1.03, 0, 1, 0);
+	RenderObject(textureIDMars, 10, 1);
+	glPopMatrix();
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(pitch / 11.9, 0, 1, 0);
+	glPushMatrix();
+	glTranslated(moveX - 17, moveY, moveZ);
+	glScalef(1.121, 1.121, 1.121);
+	glRotatef(pitch/0.415, 0, 1, 0);
+	RenderObject(textureIDJupiter, 10, 1);
+	glPopMatrix();
+	glPopMatrix();
+
+
+		glPushMatrix();
+		glRotatef(pitch / 29.4, 0, 1, 0);
+		glPushMatrix();
+		glTranslated(moveX + 20, moveY, moveZ);
+		glScalef(1.121, 1.121, 1.121);
+		glRotatef(pitch/0.445, 0, 1, 0);
+		RenderObject(textureIDSaturn, 10, 1);
+		glPopMatrix();
+		glPopMatrix();
+
+
+	glPushMatrix();
+	glRotatef(pitch / 83.7, 0, 1, 0);
+	glPushMatrix();
+	glTranslated(moveX - 23, moveY, moveZ);
+	glScalef(0.8, 0.8, 0.8);
+	glRotatef(pitch/-0.720, 0, 1, 0);
+	RenderObject(textureIDUranus, 10, 1);
+	glPopMatrix();
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(pitch / 163.7, 0, 1, 0);
+	glPushMatrix();
+	glTranslated(moveX + 25, moveY, moveZ);
+	glScalef(0.388, 0.388, 0.388);
+	glRotatef(pitch/0.673, 0, 1, 0);
+	RenderObject(textureIDNeptune, 10, 1);
+	glPopMatrix();
+	glPopMatrix();
+
 	glPopMatrix();
 	glutSwapBuffers();
 }
@@ -624,6 +702,18 @@ static void Key(unsigned char key, int x, int y) {
 		}
 		glutPostRedisplay();
 		break;
+	case 'f':
+		if(flyThrough==-1){
+			flyThrough=0;
+		}
+		flyThrough^= 1;
+		glutPostRedisplay();
+		break;
+	case 'r':
+			flyThrough=-1;
+			cameraDistance= 35;
+			glutPostRedisplay();
+			break;
 	case 27:
 		exit(0);
 	}
@@ -661,8 +751,8 @@ void motion(int x, int y) {
 
 	} else if (LeftButtonDown) {
 		// Change Rotation
-		pitch += (RelX * 180);
-		yaw += (RelY * 180);
+		pitchM += (RelX * 180);
+		yawM += (RelY * 180);
 	} else if (MiddleButtonDown) {
 
 		moveX += RelX * 2 / zoom;
@@ -751,13 +841,26 @@ void main_menu_select(int value) {
 	glutPostRedisplay();
 }
 
+//static GLfloat u = 0.0;                 // curve parameter for comet pos
+//static GLfloat du = 0.1;                // amt to increment u each frame
+
+void timer(int v) {
+
+	pitch = (pitch + 1.0);
+	// yaw = (int)(yaw + 2) % 360;
+//  glLoadIdentity();
+// gluLookAt(20*cos(u/8.0)+12,5*sin(u/8.0)+1,10*cos(u/8.0)+2, 0,0,0, 0,1,0);
+	glutPostRedisplay();
+	glutTimerFunc(30, timer, v);
+}
+
 int main(int argc, char **argv) {
 
 	int left_light_m, right_light_m, torus_m, teapot_m, ico_m;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE | GLUT_DEPTH);
-	glutCreateWindow("Tri File Rendering");
+	glutCreateWindow("Solar System");
 	glutReshapeWindow(windW, windH);
 	Init();
 	glutReshapeFunc(Reshape);
@@ -803,17 +906,24 @@ int main(int argc, char **argv) {
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 
 	glLightfv(GL_LIGHT0, GL_POSITION, left_light_position);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, white_light);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light);
 	glLightfv(GL_LIGHT1, GL_POSITION, right_light_position);
-	glLightfv(GL_LIGHT1, GL_SPECULAR, white_light);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, white_light);
+	glLightfv(GL_LIGHT2, GL_POSITION, front_light_position);
+	glLightfv(GL_LIGHT2, GL_SPECULAR, white_light);
+	glLightfv(GL_LIGHT2, GL_DIFFUSE, white_light);
+	glEnable(GL_LIGHT2);
+
 	changeLeftLight(LIGHT_WHITE);
 	changeRightLight(LIGHT_WHITE);
 	teapot_select(MATTE);
+	glutTimerFunc(100, timer, 0);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_BLEND);
 	glEnable(GL_TEXTURE_2D);
+	glShadeModel(GL_SMOOTH);
 	glutMainLoop();
 	return 0;
 }

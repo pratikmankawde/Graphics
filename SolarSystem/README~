@@ -1,0 +1,17 @@
+Introduction:
+It is aa animated and interactive simulation of solar system.
+
+Controls:
+keyboard
++ : zoom in
+- : zoom out
+shift+mouse-left key : move camera inward/outward.
+l : wire frame
+p : point cloud
+
+Mouse right click : popp-up menu
+
+Install SOIL libray
+Compile using Makefile
+Run main application
+
