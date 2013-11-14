@@ -1,3 +1,18 @@
+Introduction:
+This programs renders Cow and add texture to it. Other models available with the package can also be rendered
+but accurate texturing is implemented for Cow model only.
+
+Controls:
+keyboard
++ : zoom in
+- : zoom out
+l : wire frame
+p : point cloud
+
+shift + mouse-left-key : move camera inward/outward.
+Mouse right click : pop-up menu
+
+
 Install SOIL libray
 Compile using Makefile
 Run texture application
