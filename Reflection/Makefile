@@ -1,7 +1,7 @@
 
 GL_FLAGS= -lm -lGLU -lglut -lGL -lSOIL
 
-EXE_NAME= Texture
+EXE_NAME= Reflection
 
 FILES= *.c
 

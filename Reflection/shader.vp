@@ -1,0 +1,16 @@
+void main (void)
+{
+  // Compute world position and normal
+  vec3 worldPosition = vec3 (gl_ModelViewMatrix * gl_Vertex);
+  vec3 N = normalize (gl_NormalMatrix * gl_Normal);
+
+  // Compute reflection vector
+  vec3 R = reflect (worldPosition, N);
+
+  // Transform the reflection vector by texture matrix
+  // in order to orient the reflected image
+  gl_TexCoord[0] = gl_TextureMatrix[0] * vec4 (R, 30.0);
+
+  // Transform vertex into clip space
+  gl_Position = ftransform ();
+}
