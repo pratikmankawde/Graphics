@@ -1,0 +1,33 @@
+~How to Compile~
+1. Run Makefile through terminal.
+2. Execute the executable with name Reflection.
+
+
+~Expected Inputs~
+Mouse:
+1. Click and drag left button of mouse to rotate object.
+2. Use right button of mouse to bring popup menu.
+3. Use shift+left mouse button (drag up-down) to change distance of camera from object.
+4. Use middle mouse button(drag) to translate object.
+
+Keyboard Shortcuts:
+5. Use +/- of keyboard for zooming the object at once.
+6. b : switch background color between black/white.
+7. p : To switch between point cloud and filled version of object.
+8. w : To switch between wireframe and filled version of object.
+9. n : To switch between per-fragment and per-vertex normals.
+10. l : Rotate light with object(Select colored left-light first to see clearly, using popup menu). Only left light will move with object, right light will remain steady. 
+
+~Notable Defects~
+none.
+
+
+~References~
+http://www.interlopers.net/tutorials/28841
+http://zach.in.tu-clausthal.de/teaching/cg_literatur/glsl_tutorial/
+http://content.gpwiki.org/index.php/OpenGL:Tutorials:Using_Quaternions_to_represent_rotation#Example
+http://www.lighthouse3d.com/opengl/glut/
+http://www.videotutorialsrock.com/
+http://ogldev.atspace.co.uk/
+http://nehe.gamedev.net/
+
