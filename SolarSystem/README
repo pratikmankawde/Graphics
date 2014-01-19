@@ -9,7 +9,7 @@ shift+mouse-left key : move camera inward/outward.
 l : wire frame
 p : point cloud
 
-Mouse right click : popp-up menu
+Mouse right click : pop-up menu
 
 Install SOIL libray
 Compile using Makefile
