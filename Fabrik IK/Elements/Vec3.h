@@ -207,12 +207,19 @@ public:
 		*aAngle = aVec1.getAngle(aVec2);
 	}
 
+	/* column major post multiplication
+	 * 	     ( m[0]   m[4]   m[8]    m[12] )	 ( v[0]	)
+		     |m[1]   m[5]    m[9]   m[13]  |	 | v[1]	|
+	  M(v) = |m[2]   m[6]   m[10]   m[14]  |  x	 | v[2]	|
+		     (m[3]   m[7]   m[11]   m[15]  )	 ( v[3]	)
+	 */
+
 	void transformVertex(GLdouble* aMVMatrix) {
 		Vec3<GLdouble> trans;
-		trans[0] = aMVMatrix[0] * vec3[0] + aMVMatrix[4] * vec3[1] + aMVMatrix[8] * vec3[2] + aMVMatrix[12] * 1.0;
-		trans[1] = aMVMatrix[1] * vec3[0] + aMVMatrix[5] * vec3[1] + aMVMatrix[9] * vec3[2] + aMVMatrix[13] * 1.0;
-		trans[2] = aMVMatrix[2] * vec3[0] + aMVMatrix[6] * vec3[1] + aMVMatrix[10] * vec3[2] + aMVMatrix[14] * 1.0;
-		GLdouble w = aMVMatrix[3] * vec3[0] + aMVMatrix[7] * vec3[1] + aMVMatrix[11] * vec3[2] + aMVMatrix[15] * 1.0;
+		trans[0] = aMVMatrix[0] * vec3[0] + aMVMatrix[1] * vec3[1] + aMVMatrix[2] * vec3[2] + aMVMatrix[3] * 1.0;
+		trans[1] = aMVMatrix[4] * vec3[0] + aMVMatrix[5] * vec3[1] + aMVMatrix[6] * vec3[2] + aMVMatrix[7] * 1.0;
+		trans[2] = aMVMatrix[8] * vec3[0] + aMVMatrix[9] * vec3[1] + aMVMatrix[10] * vec3[2] + aMVMatrix[11] * 1.0;
+	  GLdouble w = aMVMatrix[12] * vec3[0] + aMVMatrix[13] * vec3[1] + aMVMatrix[14] * vec3[2] + aMVMatrix[15] * 1.0;
 		vec3[0] = trans[0]/w;
 		vec3[1] = trans[1]/w;
 		vec3[2] = trans[2]/w;

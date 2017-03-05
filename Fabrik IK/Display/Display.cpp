@@ -102,19 +102,19 @@ Display::addModel(Model* aModel) {
 Vec3<GLfloat>
 Display::screenToWorld(GLint mouseX, GLint mouseY) {
 
-	GLfloat screenX, screenY, screenZ;
+	GLint screenX, screenY;
 	GLdouble posX, posY, posZ;
 
-	Vec3<GLdouble> nearVertex, farVertex;
+	Vec3<GLfloat> nearVertex, farVertex;
 
 	glGetDoublev(GL_MODELVIEW_MATRIX, mModelview);
 	glGetDoublev(GL_PROJECTION_MATRIX, mProjection);
 	glGetIntegerv(GL_VIEWPORT, mViewport);
 
-	screenX = (GLfloat)mouseX;
-	screenY = (GLfloat)mViewport[1] + (GLfloat)mViewport[3] - (GLfloat)mouseY;  // Subtract The Current Mouse Y Coordinate
+	screenX = mouseX;
+	screenY = mViewport[1] + mViewport[3] - mouseY;  // Subtract The Current Mouse Y Coordinate
 
-	glReadPixels((GLint)screenX, (GLint)screenY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &screenZ);//Reads the depth buffer
+	glReadPixels(screenX, screenY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depthvalue);//Reads the depth buffer
 
 //	gluUnProject(screenX, screenY, 0.0f, mModelview, mProjection, mViewport, &posX, &posY, &posZ);
 //	nearVertex[0]=posX;
@@ -139,7 +139,7 @@ Display::screenToWorld(GLint mouseX, GLint mouseY) {
 //
 //	mWorldXYZ[2] = screenZ;
 
-	gluUnProject( screenX, screenY, screenZ, mModelview, mProjection, mViewport, &posX, &posY, &posZ);
+	gluUnProject( screenX, screenY, depthvalue, mModelview, mProjection, mViewport, &posX, &posY, &posZ);
 
 	mWorldXYZ[0] = posX;
 	mWorldXYZ[1] = posY;
@@ -233,12 +233,12 @@ void
 Display::renderModels() {
 
 	drawDestination();
-	if(moving)
+	if(moving) {
 	mSelectionPlane->drawModel(mScreenWidth, mScreenHeight,mCamera.getCameraViewPoint());
+	}
 	for (Model* model : mModels) {
 		model->drawModel();
 	}
-
 }
 
 void

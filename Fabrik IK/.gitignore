@@ -2,3 +2,5 @@
 /.project
 /Debug/
 /.settings/
+/.autotools
+/.settings/*

@@ -53,7 +53,7 @@ PlaneModel::drawModel() {
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glPopMatrix();
 	isDrawn = true;
-	glutPostRedisplay();
+	//glutPostRedisplay();
 }
 
 

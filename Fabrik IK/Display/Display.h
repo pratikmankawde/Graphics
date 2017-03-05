@@ -34,7 +34,7 @@ private:
 	GLint mLastMouseX;
 	GLint mLastMouseY;
 	Vec3<GLfloat> mWorldXYZ;
-
+	GLfloat depthvalue;
 	// Models to draw
 	vector<Model*> mModels;
 	PlaneModel* mSelectionPlane;
